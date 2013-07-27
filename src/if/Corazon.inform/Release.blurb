@@ -1,0 +1,9 @@
+! Blurb file created by NI build 5U92
+variable [RELEASE] = "1"
+storyfile "c:\src\island\src\if\Corazon.inform\Build\output.z5" include
+metadata "c:\src\island\src\if\Corazon.inform\Metadata.iFiction" include
+variable [YEAR] = "2009"
+variable [TITLE] = "Corazon"
+variable [AUTHOR] = "John Doty"
+variable [BLURB] = "A work of interactive fiction."
+variable [IFID] = "5EF88650-C6F9-4AF8-A53F-01166ED23C27"

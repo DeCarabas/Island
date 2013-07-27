@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Skein rootNode="node-0x0177A680" xmlns="http://www.logicalshift.org.uk/IF/Skein">
+  <generator>Inform 7 for Windows</generator>
+  <activeNode nodeId="node-0x0177A680"/>
+  <item nodeId="node-0x0177A680">
+    <command xml:space="preserve">- start -</command>
+    <result xml:space="preserve">Corazon&#x000A;An Interactive Fiction by John Doty&#x000A;Release 1 / Serial number 090813 / Inform 7 build 5U92 (I6/v6.31 lib 6/12N) SD&#x000A;&#x000A;End of the Docks&#x000A;&#x000A;&gt;</result>
+    <commentary xml:space="preserve"></commentary>
+    <played>YES</played>
+    <changed>YES</changed>
+    <temporary score="0">NO</temporary>
+  </item>
+</Skein>
