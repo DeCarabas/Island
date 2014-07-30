@@ -18,7 +18,7 @@
         ProjectCache cache = new ProjectCache();
         Point oldLocation;
         MapPalette palette;
-        UltimaProject project = new UltimaProject { GameDirectory = @"c:\src\island\games\si" };
+        UltimaProject project = new UltimaProject { GameDirectory = @"c:\src\island\games\u7" };
 
         public MapWindow()
         {
