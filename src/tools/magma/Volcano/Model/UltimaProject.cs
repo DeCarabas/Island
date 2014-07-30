@@ -11,6 +11,9 @@
 
     public delegate T FlexDecoder<T>(BinaryReader reader, long objectId, long objectSize);
 
+    /// <summary>
+    /// Represents the game data for a Ultima 7 based game.
+    /// </summary>
     public class UltimaProject : INotifyPropertyChanged
     {
         // These were taken from the exult source code; they are colors with alphas that are to be used 
@@ -27,13 +30,13 @@
             Color.FromArgb(128,144, 40,192),     
             Color.FromArgb(128, 96, 40, 16),    
             Color.FromArgb(192,100,108,116), 
-		    Color.FromArgb(128, 68,132, 28),    
+            Color.FromArgb(128, 68,132, 28),    
             Color.FromArgb( 64,255,208, 48),    
             Color.FromArgb(128, 28, 52,255),
-		    Color.FromArgb(128,  8, 68,  0),    
+            Color.FromArgb(128,  8, 68,  0),    
             Color.FromArgb(118,255,  8,  8),    
             Color.FromArgb(128,255,244,248), 
-		    Color.FromArgb(128, 56, 40, 32),    
+            Color.FromArgb(128, 56, 40, 32),    
             Color.FromArgb( 82,228,224,214)
         };
 

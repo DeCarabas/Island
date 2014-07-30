@@ -1,27 +1,92 @@
 ﻿namespace Volcano.Model
 {
-    using System;
     using System.Drawing;
     using System.IO;
 
+    /// <summary>
+    /// Indicates what sort of shape this is.
+    /// </summary>
+    /// <remarks>
+    /// This is used to determine what the quality field actually means.
+    /// </remarks>
     public enum ShapeClass
     {
-        Unusable = 0,		// Trees.
+        /// <summary>
+        /// Trees, scenery.
+        /// </summary>
+        Unusable = 0,
+
+        /// <summary>
+        /// Has a 'quality' field indicating which thing it is.
+        /// </summary>
         Quality = 2,
-        Quantity = 3,		// Can have more than 1:  coins, arrs.
-        Breakable = 4,	    // Breakable items (if hp != 0, that is)
-        QualityFlags = 5,	// Item quality is set of flags:
-                            // Bit 3 = okay-to-take.
+
+        /// <summary>
+        /// Can have more than one: coins, say, or arrows.
+        /// </summary>
+        Quantity = 3,
+
+        /// <summary>
+        /// Breakable items.
+        /// </summary>
+        Breakable = 4,
+
+        /// <summary>
+        /// The item quality is a set of flags.
+        /// </summary>
+        /// <remarks>If bit 3 is set, it's OK to take.</remarks>
+        QualityFlags = 5,
+        
+        /// <summary>
+        /// It's a container.
+        /// </summary>
         Container = 6,
-        Hatchable = 7,		// Eggs, traps, moongates.
+
+        /// <summary>
+        /// It's an egg, or a trap, or a moongate; something that runs when you step in it.
+        /// </summary>
+        Hatchable = 7,
+
+        /// <summary>
+        /// A spellbook.
+        /// </summary>
         Spellbook = 8,
+
+        /// <summary>
+        /// A barge.
+        /// </summary>
         Barge = 9,
+
+        /// <summary>
+        /// A virtue stone.
+        /// </summary>
         VirtueStone = 11,
-        Monster = 12,		// Non-human's.
-        Human = 13,		// Human NPC's.
-        Building = 14		// Roof, window, mountain.
+
+        /// <summary>
+        /// A non-human NPC.
+        /// </summary>
+        Monster = 12,		
+
+        /// <summary>
+        /// A human NPC.
+        /// </summary>
+        Human = 13,		
+
+        /// <summary>
+        /// Some part of a building, like a roof, a window, or a mountain.
+        /// </summary>
+        Building = 14
     }
 
+    /// <summary>
+    /// Represents a class of thing in the game.
+    /// </summary>
+    /// <remarks>
+    /// Shape serves two different roles:
+    ///   - It's the container for bitmaps, as a series of frames.
+    ///   - It stores metadata about the object, much as a game object-class would. This includes information about its
+    ///     behavior in the game world, and how to interpret its instance data.
+    /// </remarks>
     public class Shape
     {
         Frame[] frames;
