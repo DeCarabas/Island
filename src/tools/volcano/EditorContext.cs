@@ -1,10 +1,10 @@
 ﻿namespace Volcano
 {
-    using Volcano.Model;
-    using System.ComponentModel;
-    using System.Collections.ObjectModel;
-    using System.Collections.Generic;
     using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System.ComponentModel;
+    using Volcano.Model;
 
     public class EditorContext : INotifyPropertyChanged
     {

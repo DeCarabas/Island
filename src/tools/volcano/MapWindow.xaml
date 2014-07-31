@@ -35,20 +35,22 @@
             </MenuItem>
             <MenuItem Header="_View" />
         </Menu>
-        <my:MapView 
-            Grid.Row="1"    
-            Grid.ColumnSpan="3" 
-            x:Name="MapView" 
-            CameraX="4712" 
-            CameraY="18008" 
-            Cache="{Binding Path=Cache}"
-            Project="{Binding Path=Project}"
-            ZLimit="{Binding Path=ZLimit}"
-            MouseDown="OnMapMouseDown"
-            MouseMove="OnMapMouseMove"
-            MouseUp="OnMapMouseUp"
-            Cursor="{Binding Path=CurrentTool, Converter={StaticResource ToolCursorConverter}}" 
-        />
+        <Grid Grid.Row="1" Grid.ColumnSpan="3">
+            <Grid.LayoutTransform>
+                <ScaleTransform ScaleX="2" ScaleY="2" />
+            </Grid.LayoutTransform>
+            <my:MapView 
+                x:Name="MapView" 
+                CameraX="4712" 
+                CameraY="18008" 
+                Cache="{Binding Path=Cache}"
+                Project="{Binding Path=Project}"
+                ZLimit="{Binding Path=ZLimit}"
+                MouseDown="OnMapMouseDown"
+                MouseMove="OnMapMouseMove"
+                MouseUp="OnMapMouseUp"
+                Cursor="{Binding Path=CurrentTool, Converter={StaticResource ToolCursorConverter}}" />
+        </Grid>
         <TextBlock 
             Grid.Column="0" 
             Grid.Row="2"
