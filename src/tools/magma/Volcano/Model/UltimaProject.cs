@@ -46,7 +46,7 @@
         FlexFile<Shape> shapes;
         FlexFile<string> text;
 
-        public string GameDirectory 
+        public string GameDirectory
         {
             get { return this.gameDirectory; }
             set
@@ -59,8 +59,8 @@
         }
         public string GamedatDirectory { get { return Path.Combine(GameDirectory, "gamedat"); } }
         public string StaticDirectory { get { return Path.Combine(GameDirectory, "static"); } }
-        
-        public UltimaMap Map 
+
+        public UltimaMap Map
         {
             get { return this.map; }
             set
@@ -69,7 +69,7 @@
                 Notify("Map");
             }
         }
-        public FlexFile<Color[]> Palettes 
+        public FlexFile<Color[]> Palettes
         {
             get { return this.palettes; }
             set
@@ -78,7 +78,7 @@
                 Notify("Palettes");
             }
         }
-        public FlexFile<Shape> Shapes 
+        public FlexFile<Shape> Shapes
         {
             get { return this.shapes; }
             set
@@ -87,7 +87,7 @@
                 Notify("Shapes");
             }
         }
-        public FlexFile<string> Text 
+        public FlexFile<string> Text
         {
             get { return this.text; }
             set
@@ -101,8 +101,6 @@
 
         Frame GetFrame(int shape, int frame)
         {
-            // Ugh, I can't figure out why this hack is needed. But it appears to be.
-            //
             Shape shapeObject = Shapes.Contents[shape];
             return shapeObject.Frames[frame % shapeObject.Frames.Length];
         }
@@ -206,138 +204,77 @@
                 {
                     int absoluteRegionTileX = x * MapUnits.ChunksPerRegion * MapUnits.TilesPerChunk;
 
-                    FlexFile<List<MapObject>> staticItems;
                     int fileCoord = (y * MapUnits.RegionsPerMap) + x;
-                    staticItems = OpenStaticFlex(String.Format("U7IREG{0:X02}", fileCoord), (reader, id, size) =>
+                    using (var stream = OpenGameFile(String.Format("U7IREG{0:X02}", fileCoord)))
                     {
-                        int chunkX = (int)(id % MapUnits.ChunksPerRegion);
-                        int chunkY = (int)(id / MapUnits.ChunksPerRegion);
-                       
-                        int absoluteChunkTileX = chunkX * MapUnits.TilesPerChunk;
-                        int absoluteChunkTileY = chunkY * MapUnits.TilesPerChunk;
-
-                        List<MapObject> objects = new List<MapObject>();
-                        byte objectLength = reader.ReadByte();
-                        while (objectLength != 0)
+                        using (BinaryReader reader = new BinaryReader(stream))
                         {
-                            GameObject gameObject = new GameObject
+                            while (reader.BaseStream.Position < reader.BaseStream.Length)
                             {
-                                Location = new MapPoint
+                                List<MapObject> chunkObjects = LoadObjectList(reader, (xy) =>
                                 {
-                                    X = (reader.ReadByte() + absoluteChunkTileX + absoluteRegionTileX) * MapUnits.PixelsPerChunk,
-                                    Y = (reader.ReadByte() + absoluteChunkTileY + absoluteRegionTileY) * MapUnits.PixelsPerChunk,
+                                    int lx = (xy & 0x00FF);
+                                    int ly = (xy & 0xFF00) >> 8;
+
+                                    return new MapPoint
+                                    {
+                                        X = (MapUnits.PixelsPerRegion * x) + (lx * MapUnits.PixelsPerTile),
+                                        Y = (MapUnits.PixelsPerRegion * y) + (ly * MapUnits.PixelsPerTile)
+                                    };
+                                });
+
+                                foreach (MapObject mo in chunkObjects)
+                                {
+                                    MapRegion region = map[mo.Location.WorldX, mo.Location.WorldY];
+                                    MapChunk chunk = region[mo.Location.RegionX, mo.Location.RegionY];
+
+                                    chunk.Objects.Add(mo);
                                 }
-                            };
-
-                            ushort shapeId = reader.ReadUInt16();
-                            int shapeNumber = shapeId & 0x03FF;
-                            int frameNumber = (shapeId & 0x7C00) >> 10;
-                            gameObject.Frame = Shapes.Contents[shapeNumber].Frames[frameNumber];
-
-                            switch (objectLength)
-                            {
-                                case 0x06:
-                                    gameObject.ObjectKind = ObjectKind.Standard;
-                                    ReadStandardObject(gameObject, reader);
-                                    break;
-                                case 0x0C:
-                                    gameObject.ObjectKind = ObjectKind.Extended;
-                                    ReadExtendedObject(gameObject, reader);
-                                    break;
-                                case 0x12:
-                                    gameObject.ObjectKind = ObjectKind.Extra;
-                                    ReadExtraObject(gameObject, reader);
-                                    break;
                             }
-
-                            objects.Add(gameObject);
-                            objectLength = reader.ReadByte();
-                        }
-
-                        return objects;
-                    });
-
-
-                    int iChunk = 0;
-                    for (int cy = 0; cy < MapUnits.ChunksPerRegion; cy++)
-                    {
-                        for (int cx = 0; cx < MapUnits.ChunksPerRegion; cx++)
-                        {
-                            List<MapObject> chunkObjects = staticItems.Contents[iChunk];
-                            if (chunkObjects != null)
-                            {
-                                map[x, y][cx, cy].Objects.AddRange(chunkObjects);
-                            }
-                            iChunk++;
                         }
                     }
                 }
             }
         }
 
-        // Set origin to 0, 0 for insides of containers, otherwise set it to the origin of the region.
-        //
-        List<GameObject> LoadObjectList(BinaryReader reader, Point origin, bool inContainer, int flags)
+        private List<MapObject> LoadObjectList(BinaryReader reader, Func<ushort, MapPoint> decodePosition)
         {
-            int indexId = -1; // I don't understand this yet.
-
-            List<GameObject> objects = new List<GameObject>();
-            while (reader.BaseStream.Position != reader.BaseStream.Length)
+            List<MapObject> objects = new List<MapObject>();
+            
+            byte objectKind = reader.ReadByte();
+            while (objectKind != 0 && objectKind != 1)
             {
-                byte length = reader.ReadByte();
-                if ((length == 0) || (length == 1)) { break; }
+                UInt16 xy = reader.ReadUInt16();
 
-                if (length == 2)
+                var gameObject = new GameObject { Location = decodePosition(xy) };
+
+                ushort shapeId = reader.ReadUInt16();
+                int shapeNumber = shapeId & 0x03FF;
+                int frameNumber = (shapeId & 0x7C00) >> 10;
+                gameObject.Frame = Shapes.Contents[shapeNumber].Frames[frameNumber];
+
+                switch (objectKind)
                 {
-                    indexId = reader.ReadInt16();
+                case 0x06:
+                    gameObject.ObjectKind = ObjectKind.Standard;
+                    ReadStandardObject(gameObject, reader);
+                    break;
+                case 0x0C:
+                    gameObject.ObjectKind = ObjectKind.Extended;
+                    ReadExtendedObject(gameObject, reader);
+                    break;
+                case 0x12:
+                    gameObject.ObjectKind = ObjectKind.Extra;
+                    ReadExtraObject(gameObject, reader);
+                    break;
+                default:
+                    throw new NotSupportedException("Unknown object type");
                 }
-                else if (length == 0xFF)
-                {
-                    objects.Add(ReadSpecialObject(reader));
-                }
-                else
-                {
-                    bool isExtended = false;
-                    int actualLength = length;
-                    if (length == 0xFE)
-                    {
-                        isExtended = true;
-                        length = reader.ReadByte();
-                        actualLength = length - 1;
-                    }
-                    long objectStart = reader.BaseStream.Position;
 
-                    byte x = reader.ReadByte();
-                    byte y = reader.ReadByte();
+                objects.Add(gameObject);
 
-                    GameObject gameObj = new GameObject
-                    {
-                        Location = new MapPoint
-                        {
-                            X = (x * MapUnits.PixelsPerTile) + origin.X,
-                            Y = (y * MapUnits.PixelsPerTile) + origin.Y,
-                        }
-                    };
-
-                    if (isExtended)
-                    {
-                        gameObj.Frame = Shapes.Contents[reader.ReadUInt16()].Frames[reader.ReadByte()];
-                    }
-                    else
-                    {
-                        int shapeFrame = reader.ReadUInt16();
-                        
-                        int shape = (shapeFrame & 0x03FF);
-                        int frame = (shapeFrame & 0x7C00) >> 8;
-
-                        gameObj.Frame = Shapes.Contents[shape].Frames[frame];
-                    }
-
-
-
-                    objects.Add(gameObj);
-                    reader.BaseStream.Position = objectStart + length;
-                }
+                if (reader.BaseStream.Length == reader.BaseStream.Position) { break; }
+                objectKind = reader.ReadByte();
             }
 
             return objects;
@@ -346,27 +283,48 @@
         void Notify(string property)
         {
             if (PropertyChanged != null) { PropertyChanged(this, new PropertyChangedEventArgs(property)); }
-        }
+        }        
 
-        GameObject ReadSpecialObject(BinaryReader reader)
+        static void SetObjectLift(GameObject gameObject, byte lift)
         {
-            throw new NotImplementedException();
+            gameObject.Location.Z = (lift & 0xF0) >> 4;
         }
 
         static void ReadStandardObject(GameObject gameObject, BinaryReader reader)
         {
-            gameObject.Location.Z = (reader.ReadByte() & 0xF0) >> 4;
-            gameObject.Quality = reader.ReadByte();
+            byte lift = reader.ReadByte();
+            byte quality = reader.ReadByte();
+
+            SetObjectLift(gameObject, lift);
+            gameObject.Quality = quality;
         }
 
-        static void ReadExtendedObject(GameObject gameObject, BinaryReader reader)
+        void ReadExtendedObject(GameObject gameObject, BinaryReader reader)
         {
-            throw new NotImplementedException();
+            // TODO: Interpret this; it's different per object type. (Virtue stones, barges, spellbooks, &c.)
+            UInt16 type = reader.ReadUInt16();
+            byte proba = reader.ReadByte();
+            UInt16 data1 = reader.ReadUInt16();
+            byte lift = reader.ReadByte();
+            UInt16 data2 = reader.ReadUInt16();
+
+            if (gameObject.Shape.Class == ShapeClass.Container)
+            {
+                List<MapObject> contents = LoadObjectList(reader, xy => new MapPoint());
+            }
+
+            SetObjectLift(gameObject, lift);
         }
 
         static void ReadExtraObject(GameObject gameObject, BinaryReader reader)
         {
-            throw new NotImplementedException();
+            // TODO: Interpret this; it's really just spellbook information.
+            byte[] circlesFirst = reader.ReadBytes(5);
+            byte lift = reader.ReadByte();
+            byte[] circlesSecond = reader.ReadBytes(4);
+            int flags = reader.ReadInt32();
+
+            SetObjectLift(gameObject, lift);
         }
 
         UltimaMap LoadMap()
@@ -411,14 +369,14 @@
                             for (int x = 0; x < region.Width; x++)
                             {
                                 ushort chunkId = reader.ReadUInt16();
-                                region[x, y] = new MapChunk 
+                                region[x, y] = new MapChunk
                                 {
                                     Location = new MapPoint
                                     {
                                         X = (regionX * MapUnits.PixelsPerRegion) + (x * MapUnits.PixelsPerChunk),
                                         Y = (regionY * MapUnits.PixelsPerRegion) + (y * MapUnits.PixelsPerChunk),
                                     },
-                                    Template = map.ChunkTemplates[chunkId] 
+                                    Template = map.ChunkTemplates[chunkId]
                                 };
                             }
                         }
@@ -429,6 +387,7 @@
             }
 
             LoadFixedObjects(map); // TODO: GULP
+            LoadGameObjects(map);
             return map;
         }
 
