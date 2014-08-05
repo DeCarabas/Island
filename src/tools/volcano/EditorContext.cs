@@ -19,7 +19,7 @@
 
         public EditorContext()
         {
-            this.project = new UltimaProject { GameDirectory = @"c:\src\island\games\u7" };
+            this.project = new UltimaProject { GameDirectory = @"c:\src\island\games\si" };
             this.project.Load();
             FilterChunkList();
         }

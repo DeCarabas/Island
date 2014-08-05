@@ -8,6 +8,7 @@
     using System.Collections;
     using System.Drawing;
     using System.ComponentModel;
+    using System.Diagnostics;
 
     public delegate T FlexDecoder<T>(BinaryReader reader, long objectId, long objectSize);
 
@@ -205,13 +206,14 @@
                     int absoluteRegionTileX = x * MapUnits.ChunksPerRegion * MapUnits.TilesPerChunk;
 
                     int fileCoord = (y * MapUnits.RegionsPerMap) + x;
-                    using (var stream = OpenGameFile(String.Format("U7IREG{0:X02}", fileCoord)))
+                    string fileName = String.Format("U7IREG{0:X02}", fileCoord);
+                    using (var stream = OpenGameFile(fileName))
                     {
                         using (BinaryReader reader = new BinaryReader(stream))
                         {
                             while (reader.BaseStream.Position < reader.BaseStream.Length)
                             {
-                                List<MapObject> chunkObjects = LoadObjectList(reader, (xy) =>
+                                List<MapObject> chunkObjects = LoadObjectList(fileName, reader, (xy) =>
                                 {
                                     int lx = (xy & 0x00FF);
                                     int ly = (xy & 0xFF00) >> 8;
@@ -237,10 +239,11 @@
             }
         }
 
-        private List<MapObject> LoadObjectList(BinaryReader reader, Func<ushort, MapPoint> decodePosition)
+        private List<MapObject> LoadObjectList(
+            string fileName, BinaryReader reader, Func<ushort, MapPoint> decodePosition)
         {
             List<MapObject> objects = new List<MapObject>();
-            
+
             byte objectKind = reader.ReadByte();
             while (objectKind != 0 && objectKind != 1)
             {
@@ -256,19 +259,35 @@
                 switch (objectKind)
                 {
                 case 0x06:
+                case 0x0A:
                     gameObject.ObjectKind = ObjectKind.Standard;
                     ReadStandardObject(gameObject, reader);
+
+                    if (objectKind == 0x0A)
+                    {
+                        // 4 bytes after this are... flags? Exult only looks at the first byte to pull the "temporary 
+                        // object" flag out.
+                        reader.BaseStream.Position += 4;
+                    }
                     break;
+
                 case 0x0C:
+                case 0x0D:
                     gameObject.ObjectKind = ObjectKind.Extended;
-                    ReadExtendedObject(gameObject, reader);
+                    ReadExtendedObject(fileName, gameObject, reader, extendedNPC: (objectKind == 0x0D));
                     break;
                 case 0x12:
                     gameObject.ObjectKind = ObjectKind.Extra;
                     ReadExtraObject(gameObject, reader);
                     break;
                 default:
-                    throw new NotSupportedException("Unknown object type");
+                    Debug.WriteLine(String.Format(
+                        "Unknown object of length {0} @ {1}:{2:x}",
+                        objectKind,
+                        fileName,
+                        (reader.BaseStream.Position - 4)));
+                    reader.BaseStream.Position += (objectKind - 4);
+                    continue;
                 }
 
                 objects.Add(gameObject);
@@ -283,7 +302,7 @@
         void Notify(string property)
         {
             if (PropertyChanged != null) { PropertyChanged(this, new PropertyChangedEventArgs(property)); }
-        }        
+        }
 
         static void SetObjectLift(GameObject gameObject, byte lift)
         {
@@ -299,21 +318,32 @@
             gameObject.Quality = quality;
         }
 
-        void ReadExtendedObject(GameObject gameObject, BinaryReader reader)
+        void ReadExtendedObject(string fileName, GameObject gameObject, BinaryReader reader, bool extendedNPC)
         {
             // TODO: Interpret this; it's different per object type. (Virtue stones, barges, spellbooks, &c.)
             UInt16 type = reader.ReadUInt16();
             byte proba = reader.ReadByte();
-            UInt16 data1 = reader.ReadUInt16();
+            byte quality = reader.ReadByte();
+
+            ushort npc_num;
+            if (extendedNPC)
+            {
+                npc_num = reader.ReadUInt16();
+            }
+            else
+            {
+                byte quantity = reader.ReadByte();
+                npc_num = ((quantity & 0x80) != 0)
+                    ? (ushort)(quantity & 0x7F)
+                    : ushort.MaxValue;
+            }
+
             byte lift = reader.ReadByte();
             UInt16 data2 = reader.ReadUInt16();
 
-            if (gameObject.Shape.Class == ShapeClass.Container)
-            {
-                List<MapObject> contents = LoadObjectList(reader, xy => new MapPoint());
-            }
-
             SetObjectLift(gameObject, lift);
+
+            List<MapObject> contents = LoadObjectList(fileName, reader, xy => new MapPoint());
         }
 
         static void ReadExtraObject(GameObject gameObject, BinaryReader reader)

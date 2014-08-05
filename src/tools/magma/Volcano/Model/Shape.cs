@@ -1,5 +1,6 @@
 ﻿namespace Volcano.Model
 {
+    using System;
     using System.Drawing;
     using System.IO;
 
@@ -7,7 +8,7 @@
     /// Indicates what sort of shape this is.
     /// </summary>
     /// <remarks>
-    /// This is used to determine what the quality field actually means.
+    /// This is used to determine what the quality field actually means, among other things.
     /// </remarks>
     public enum ShapeClass
     {
