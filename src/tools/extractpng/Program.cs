@@ -15,7 +15,7 @@
         {
             try
             {
-                // TODO: Multiple palettes.
+                // TODO: Multiple palettes?
                 //
                 if (args.Length != 2)
                 {
@@ -35,6 +35,11 @@
                     if (!Directory.Exists(shapePath)) { Directory.CreateDirectory(shapePath); }
                     
                     Shape shape = project.Shapes.Contents[i];
+                    if (shape == null)
+                    {
+                        Console.WriteLine("BROKE: {0}", i);
+                        continue;
+                    }
                     Frame[] frames = shape.Frames;
                     for (int j = 0; j < frames.Length; j++)
                     {
@@ -43,6 +48,7 @@
                         bitmap.Save(framePath, ImageFormat.Png);
                     }
                 }
+
                 Console.WriteLine();
             }
             catch (Exception e)

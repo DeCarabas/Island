@@ -61,7 +61,6 @@
 
         #endregion
 
-        private MapControl mapViewer;
         private MapControl mapView;
     }
 }
