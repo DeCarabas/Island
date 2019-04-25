@@ -29,7 +29,7 @@ namespace shapesteal
         {
             var shape = this.project.Shapes.Contents[shapeIndex];
             var frame = shape.Frames[frameIndex];
-            Bitmap bitmap = frame.GetBitmap(this.project.Palettes.Contents[paletteIndex]);
+            Bitmap bitmap = frame.GetBitmap(this.project.Palettes.Contents[paletteIndex]);            
             pictureBox.Image = new Bitmap(bitmap, bitmap.Width * 8, bitmap.Height * 8);
 
             string tileDesc = this.project.Text.Contents[(int)frame.Shape.Id] ?? "(null)";
@@ -61,26 +61,38 @@ namespace shapesteal
             this.ClientSize = new System.Drawing.Size(1076, 820);
             this.Controls.Add(this.pictureBox);
             this.Name = "StealForm";
-            this.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.KeyPressed);
+            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.KeyReleased);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox)).EndInit();
             this.ResumeLayout(false);
 
         }
 
-        private void KeyPressed(object sender, KeyPressEventArgs e)
+        private void KeyReleased(object sender, KeyEventArgs e)
         {
-            switch (e.KeyChar)
+            switch (e.KeyCode)
             {
-                case '.':
+                case Keys.Up:
+                    this.frameIndex = 0;
+                    do
                     {
-                        var shape = this.project.Shapes.Contents[this.shapeIndex];
-                        this.frameIndex = (this.frameIndex + 1) % shape.Frames.Length;
-                    }
+                        this.shapeIndex = (this.shapeIndex - 1);
+                        if (this.shapeIndex < 0) { this.shapeIndex = this.project.Shapes.Count - 1; }
+                    } while (this.project.Shapes.Contents[this.shapeIndex] == null);
                     SetImage();
                     e.Handled = true;
                     break;
 
-                case ',':
+                case Keys.Down:
+                    this.frameIndex = 0;
+                    do
+                    {
+                        this.shapeIndex = (this.shapeIndex + 1) % this.project.Shapes.Count;
+                    } while (this.project.Shapes.Contents[this.shapeIndex] == null);
+                    SetImage();
+                    e.Handled = true;
+                    break;
+
+                case Keys.Left:
                     this.frameIndex = (this.frameIndex - 1);
                     if (this.frameIndex < 0)
                     {
@@ -91,31 +103,30 @@ namespace shapesteal
                     e.Handled = true;
                     break;
 
-                case '>':
-                    this.frameIndex = 0;
-                    while (true)
+                case Keys.Right:
                     {
-                        this.shapeIndex = (this.shapeIndex + 1) % this.project.Shapes.Count;
-                        if (this.project.Shapes.Contents[this.shapeIndex] != null)
-                        {
-                            break;
-                        }
+                        var shape = this.project.Shapes.Contents[this.shapeIndex];
+                        this.frameIndex = (this.frameIndex + 1) % shape.Frames.Length;
                     }
                     SetImage();
                     e.Handled = true;
                     break;
 
-                case '<':
-                    this.frameIndex = 0;
-                    while (true)
+                case Keys.PageUp:
+                    do
                     {
-                        this.shapeIndex = (this.shapeIndex - 1);
-                        if (this.shapeIndex < 0) { this.shapeIndex = this.project.Shapes.Count - 1; }
-                        if (this.project.Shapes.Contents[this.shapeIndex] != null)
-                        {
-                            break;
-                        }
-                    }
+                        this.paletteIndex = (this.paletteIndex - 1);
+                        if (this.paletteIndex < 0) { this.paletteIndex = this.project.Palettes.Count - 1; }
+                    } while (this.project.Palettes.Contents[this.paletteIndex] == null);
+                    SetImage();
+                    e.Handled = true;
+                    break;
+
+                case Keys.PageDown:
+                    do
+                    {
+                        this.paletteIndex = (this.paletteIndex + 1) % this.project.Palettes.Count;
+                    } while (this.project.Palettes.Contents[this.paletteIndex] == null);                    
                     SetImage();
                     e.Handled = true;
                     break;
